@@ -14,8 +14,8 @@ public class CrawlerApplication {
 	@Value("${crawler.max.retries}")
 	private String mR;
 
-	public int MAX_PAGE;
-	public int MAX_RETRIES;
+	public static int MAX_PAGES;
+	public static int MAX_RETRIES;
 
 	public static void main(String[] args) {
 		SpringApplication.run(CrawlerApplication.class, args);
@@ -23,7 +23,7 @@ public class CrawlerApplication {
 
 	@PostConstruct
 	public void init(){
-		MAX_PAGE = Integer.parseInt(mP);
+		MAX_PAGES = Integer.parseInt(mP);
 		MAX_RETRIES = Integer.parseInt(mR);
 	}
 }

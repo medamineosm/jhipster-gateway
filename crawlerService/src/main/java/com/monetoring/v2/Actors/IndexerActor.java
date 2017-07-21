@@ -1,6 +1,7 @@
 package com.monetoring.v2.Actors;
 
 import akka.actor.UntypedActor;
+import com.monetoring.v2.Actors.Messages.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -33,6 +34,15 @@ public class IndexerActor extends UntypedActor implements ActorTemplate {
 
     @Override
     public void onReceive(Object message) throws Throwable {
-
+        if(message instanceof Message){
+            switch (((Message) message).getMsg()){
+                case "index":
+                    log.info("Message recieved : " + ((Message) message).getMsg());
+                    break;
+            }
+        }else{
+            unhandled(message);
+            log.error("Unhandled Message : " + ((Message)message).getMsg());
+        }
     }
 }

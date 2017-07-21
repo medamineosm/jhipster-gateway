@@ -19,6 +19,9 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static com.monetoring.v2.CrawlerApplication.MAX_PAGES;
+import static com.monetoring.v2.CrawlerApplication.MAX_RETRIES;
+
 /**
  * Created by Ouasmine on 20/07/2017.
  */
@@ -27,6 +30,7 @@ import java.util.Set;
 public class SupervisorActor extends UntypedActor implements ActorTemplate {
 
     private final Logger log = LoggerFactory.getLogger(this.getClass());
+    private ActorRef indexerActor;
 
     private long numVisited;
     private Set<String> urlToScrap;
@@ -47,6 +51,7 @@ public class SupervisorActor extends UntypedActor implements ActorTemplate {
         this.host2Actor = new HashMap<>();
         this.maxPages = MAX_PAGES;
         this.maxRetries = MAX_RETRIES;
+
     }
 
     @Override
@@ -64,7 +69,8 @@ public class SupervisorActor extends UntypedActor implements ActorTemplate {
         if(message instanceof Message){
             switch (((Message) message).getMsg()){
                 case "start":
-                    log.info("Message recieved : " + ((Message) message).getMsg());
+                    log.debug("Message recieved : " + ((Message) message).getMsg());
+                    indexerActor = actorBuilder.getIndexer();
                     scrap((String)(((Message) message).getObject()));
                     break;
                 case "scrapFinished":
@@ -95,7 +101,7 @@ public class SupervisorActor extends UntypedActor implements ActorTemplate {
         URL uri = null;
         try {
             uri = new URL(url);
-            log.info("get SiteCrawlerActor for host : "+uri.getHost());
+            log.debug("get SiteCrawlerActor for host : "+uri.getHost());
             if(!uri.getHost().isEmpty()){
                 ActorRef siteCrawler = addOrGetActor(uri.getHost());
                 numVisited++;

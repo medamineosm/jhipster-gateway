@@ -17,6 +17,7 @@ public class ActorBuilder {
     @Autowired
     private ActorSystem system;
     private static ActorRef superVisor;
+    private static ActorRef indexer;
 
     public ActorRef buildActor(String nameOfActorBean, String nameOfActor){
         ActorRef actor = system.actorOf(
@@ -38,6 +39,13 @@ public class ActorBuilder {
             return superVisor;
         else
             return superVisor = buildActor("SuperVisorActor", "supervisoractor");
+    }
+
+    public ActorRef getIndexer(){
+        if(indexer != null)
+            return indexer;
+        else
+            return indexer = buildActor("IndexerActor", "indexeractor");
     }
 
     public ActorSystem getSystem() {
