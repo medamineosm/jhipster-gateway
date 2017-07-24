@@ -13,6 +13,11 @@ import org.springframework.context.annotation.Scope;
 
 import javax.inject.Named;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import static com.monetoring.v2.CrawlerApplication.MAX_PAGES;
+
 /**
  * Created by Ouasmine on 21/07/2017.
  */
@@ -20,14 +25,14 @@ import javax.inject.Named;
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class SiteCrawlerActor extends UntypedActor implements ActorTemplate {
     private final Logger log = LoggerFactory.getLogger(this.getClass());
-    private ActorRef Scrapper;
+    @Autowired
+    private ActorBuilder actorBuilder;
+    private Set<ActorRef> Scrappers;
+
 
     public SiteCrawlerActor(){
         log.info(name() + " created");
     }
-
-    @Autowired
-    private ActorBuilder actorBuilder;
 
     @Override
     public String name() {
@@ -44,8 +49,12 @@ public class SiteCrawlerActor extends UntypedActor implements ActorTemplate {
         if(message instanceof Message){
             switch (((Message) message).getMsg()){
                 case "scrap":
-                    log.debug("Message recieved : " + ((Message) message).getMsg());
-                    this.getScrapper().tell(message, getSender());
+                    getActorScrapper((String) ((Message) message).getObject()).tell(new Message((Message) message, "scrapUrl"), self());
+                    break;
+                case "scrapFailure":
+                case "scrapFinished":
+                    sender().tell("die", self());
+                    actorBuilder.getSuperVisor().tell(message, sender());
                     break;
             }
         }else{
@@ -56,14 +65,15 @@ public class SiteCrawlerActor extends UntypedActor implements ActorTemplate {
 
     @Override
     public void preStart() throws Exception {
-        this.Scrapper = this.getContext().actorOf(Props.create(ScraperActor.class), "scraperActor");
+        this.Scrappers = new HashSet<>();
+        //actorBuilder.getScrapper(this);
     }
 
-    private ActorRef getScrapper(){
-        if(Scrapper != null)
-            return Scrapper;
-        else {
-            return getContext().actorOf(Props.create(ScraperActor.class), "scraperActor");
-        }
+    private ActorRef getActorScrapper(String url){
+        //if(Scrapper != null)
+        //    return Scrapper;
+        //else {
+            return actorBuilder.getScrapper(this);
+        //}
     }
 }

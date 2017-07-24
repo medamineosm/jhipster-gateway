@@ -20,17 +20,27 @@ public class DataUrl {
     private String htmlContent;
     private Set<String> links;
     private Date scrapedAt;
+    private int statusCode;
 
     public DataUrl() {
         this.scrapedAt = new Date();
     }
 
-    public DataUrl(String url, String host, String title, String htmlContent, Set<String> links) {
+    public DataUrl(String url, String host, String title, String htmlContent, Set<String> links, int statuCode) {
         this.url = url;
         this.host = host;
         this.title = title;
         this.htmlContent = htmlContent;
         this.links = links;
+        this.statusCode = statusCode;
+    }
+
+    public int getStatusCode() {
+        return statusCode;
+    }
+
+    public void setStatusCode(int statusCode) {
+        this.statusCode = statusCode;
     }
 
     public String getUrl() {
@@ -87,9 +97,10 @@ public class DataUrl {
                 "url='" + url + '\'' +
                 ", host='" + host + '\'' +
                 ", title='" + title + '\'' +
-                ", htmlContent='" + htmlContent.length() + '\'' +
-                ", links=" + links.size() +
+                ", htmlContent='" + htmlContent.length()+ '\'' +
+                ", links=" + links +
                 ", scrapedAt=" + scrapedAt +
+                ", statusCode=" + statusCode +
                 '}';
     }
 }

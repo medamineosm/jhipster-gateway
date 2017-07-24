@@ -26,7 +26,7 @@ public class DataUrlServiceTest {
     @Test
     public void save() throws Exception {
         dataUrlService.save(new DataUrl
-                ( "http://www.1-2-3.fr", "www.1-2-3.fr", "title test", "<html></html>", new HashSet<String>()));
+                ( "http://www.1-2-3.fr", "www.1-2-3.fr", "title test", "<html></html>", new HashSet<String>(), 200));
     }
 
 }
