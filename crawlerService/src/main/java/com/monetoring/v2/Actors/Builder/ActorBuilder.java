@@ -20,7 +20,7 @@ public class ActorBuilder {
     @Autowired
     private ActorSystem system;
     @Autowired
-    private DataUrlService dataUrlService;
+    private DataUrlService dao;
     private static ActorRef superVisor;
     private static ActorRef indexer;
 
@@ -56,15 +56,14 @@ public class ActorBuilder {
     }
     * */
 
-    public ActorRef getIndexer(DataUrlService dao){
-        if(indexer != null)
-            return indexer;
-        else
+    public ActorRef getIndexer(){
             return indexer = system.actorOf(Props.create(IndexerActor.class, dao));
     }
 
     public ActorRef getScrapper(UntypedActor parentActor){
-        return parentActor.getContext().actorOf(Props.create(ScraperActor.class, getIndexer(dataUrlService)));
+        ActorRef Indexer_childs = getIndexer();
+        ActorRef scrapper = parentActor.getContext().actorOf(Props.create(ScraperActor.class, Indexer_childs));
+        return scrapper;
     }
 
     public ActorSystem getSystem() {

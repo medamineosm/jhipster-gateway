@@ -73,7 +73,7 @@ public class SupervisorActor extends UntypedActor implements ActorTemplate {
                 case "start":
                     startTime = System.nanoTime();
                     log.debug("Message recieved : " + ((Message) message).getMsg());
-                    indexerActor = actorBuilder.getIndexer(dataUrlService);
+                    //indexerActor = actorBuilder.getIndexer(dataUrlService);
                     scrap((String)(((Message) message).getObject()));
                     break;
                 case "scrapFinished":

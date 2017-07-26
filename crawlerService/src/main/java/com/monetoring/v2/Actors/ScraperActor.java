@@ -1,6 +1,7 @@
 package com.monetoring.v2.Actors;
 
 import akka.actor.ActorRef;
+import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.util.Timeout;
 import com.googlecode.htmlcompressor.compressor.HtmlCompressor;
@@ -37,9 +38,9 @@ public class ScraperActor extends UntypedActor implements ActorTemplate {
     private ActorRef indexer;
     private String reason;
 
-    public ScraperActor(ActorRef indexer){
-        this.indexer = indexer;
-        log.info(name() + " constructor " + indexer.path());
+    public ScraperActor(ActorRef inder){
+        this.indexer = inder;
+        log.info(name() + " constructor " + this.indexer.path());
     }
 
     @Override
@@ -54,19 +55,21 @@ public class ScraperActor extends UntypedActor implements ActorTemplate {
 
     @Override
     public void onReceive(Object message) throws Throwable {
-        if(message instanceof Message){
-            switch (((Message) message).getMsg()){
+        if(message instanceof Message) {
+            switch (((Message) message).getMsg()) {
                 case "scrapUrl":
                     log.info("ScrapperActor Scraping ... : " + ((Message) message).getObject());
                     DataUrl data = parse((String) ((Message) message).getObject());
-                    if(data != null){
-                        this.indexer.tell(new Message( "index", data), self());
+                    if (data != null) {
+                        this.indexer.tell(new Message("index", data), self());
                         this.sender().tell(new Message("scrapFinished", data), self());
-                    }else{
-                        this.sender().tell(new Message(((Message) message),"scrapFailure", reason), self());
+                    } else {
+                        this.sender().tell(new Message(((Message) message), "scrapFailure", reason), self());
                     }
                     break;
             }
+        } else if(message instanceof String && message.equals("indexFinished")){
+            shutdown();
         }else if(message instanceof String && message.equals("die")){
             log.info(this.name() + "  will terminate");
             this.shutdown();

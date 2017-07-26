@@ -29,9 +29,7 @@ public class IndexerActor extends UntypedActor implements ActorTemplate {
         this.dataUrlService = dataUrlService;
     }
 
-    public IndexerActor(){
-        log.info(name() + " constructor");
-    }
+
 
     @Override
     public String name() {
@@ -51,7 +49,7 @@ public class IndexerActor extends UntypedActor implements ActorTemplate {
                     log.info("Indexing : " + (((DataUrl)((Message) message).getObject()).getUrl()));
                     urls.add((DataUrl) ((Message) message).getObject());
                     dataUrlService.save((DataUrl) ((Message) message).getObject());
-                    //shutdown();
+                    shutdown();
                     break;
             }
         }else{
