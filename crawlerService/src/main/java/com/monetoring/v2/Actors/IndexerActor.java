@@ -51,6 +51,7 @@ public class IndexerActor extends UntypedActor implements ActorTemplate {
                     log.info("Indexing : " + (((DataUrl)((Message) message).getObject()).getUrl()));
                     urls.add((DataUrl) ((Message) message).getObject());
                     dataUrlService.save((DataUrl) ((Message) message).getObject());
+                    //shutdown();
                     break;
             }
         }else{

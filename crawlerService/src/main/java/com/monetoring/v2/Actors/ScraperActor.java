@@ -3,6 +3,7 @@ package com.monetoring.v2.Actors;
 import akka.actor.ActorRef;
 import akka.actor.UntypedActor;
 import akka.util.Timeout;
+import com.googlecode.htmlcompressor.compressor.HtmlCompressor;
 import com.monetoring.v2.Actors.Builder.ActorBuilder;
 import com.monetoring.v2.Actors.Messages.Message;
 import com.monetoring.v2.Model.DataUrl;
@@ -19,6 +20,7 @@ import org.springframework.context.annotation.Scope;
 
 import javax.inject.Named;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
@@ -88,8 +90,9 @@ public class ScraperActor extends UntypedActor implements ActorTemplate {
                     data.setUrl(url);
                     data.setTitle(doc.title());
                     data.setHost(new URL(url).getHost());
-                    data.setHtmlContent(doc.html());
+                    data.setHtmlContent(compressHTML(doc.html()));
                     data.setLinks(parseLinks(doc));
+                    data.setStatusCode(200);
                     log.debug(data.toString());
                 }else{
                     log.warn(url + " is not a html page !");
@@ -112,8 +115,8 @@ public class ScraperActor extends UntypedActor implements ActorTemplate {
         Set<String> links = new HashSet<>();
         for(Element e : doc.getElementsByTag("a")){
             if(e.hasAttr("href") && !e.attr("href").isEmpty()){
-               if(isValide(e.attr("href")))
-                   links.add(preProcessUrl(e.attr("href")));
+               if(isValide(e.attr("abs:href")))
+                   links.add(preProcessUrl(e.attr("abs:href")));
             }
         }
         return links;
@@ -128,9 +131,20 @@ public class ScraperActor extends UntypedActor implements ActorTemplate {
     }
 
     private String preProcessUrl(String url){
-        if (url.contains("?"))
-            url = url.split("//?")[0];
+        //if (url.contains("?"))
+        //    url = url.split("//?")[0];
 
         return url;
+    }
+
+    private String compressHTML(String htmlContent){
+        HtmlCompressor compressor = new HtmlCompressor();
+        compressor.setEnabled(true); //if false all compression is off (default is true)
+        compressor.setRemoveComments(true); //if false keeps HTML comments (default is true)
+        compressor.setRemoveMultiSpaces(true); //if false keeps multiple whitespace characters (default is true)
+        compressor.setRemoveIntertagSpaces(true);//removes iter-tag whitespace characters
+        compressor.setRemoveQuotes(true); //removes unnecessary tag attribute quotes
+        compressor.setCompressCss(true); //compress css using Yahoo YUI Compressor
+        return compressor.compress(htmlContent);
     }
 }
