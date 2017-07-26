@@ -6,6 +6,7 @@ import com.monetoring.v2.Actors.Messages.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 import java.net.MalformedURLException;
@@ -44,6 +45,7 @@ public class CrawlerService {
     }
 
     public void Crawl(Collection<String> urls) {
+        log.info("Starting Crawl ...");
         superVisor = builder.getSuperVisor();
         for (String url: urls) {
             //log.debug(url +" -> " + SiteCrawlerPerHost(url));

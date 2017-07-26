@@ -1,6 +1,7 @@
 package com.monetoring.v2.Actors;
 
 import akka.actor.ActorRef;
+import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import com.monetoring.v2.Actors.Builder.ActorBuilder;
@@ -40,8 +41,12 @@ public class SiteCrawlerActor extends UntypedActor implements ActorTemplate {
     }
 
     @Override
+    public void forceShutDown() {
+        this.context().stop(this.self());
+    }
+    @Override
     public void shutdown() {
-        this.getContext().stop(this.getSelf());
+        this.self().tell(PoisonPill.getInstance(), ActorRef.noSender());
     }
 
     @Override

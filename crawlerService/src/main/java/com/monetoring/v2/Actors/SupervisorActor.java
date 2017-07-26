@@ -33,6 +33,7 @@ public class SupervisorActor extends UntypedActor implements ActorTemplate {
 
     private long startTime;
     private long numVisited;
+
     private Set<String> urlToScrap;
     private Map<String, Integer> scrapCount;
     private Map<String, ActorRef> host2Actor;
@@ -40,13 +41,11 @@ public class SupervisorActor extends UntypedActor implements ActorTemplate {
 
     @Autowired
     private ActorBuilder actorBuilder;
-    @Autowired
-    private DataUrlService dataUrlService;
     private int maxPages;
     private int maxRetries;
 
     public SupervisorActor(){
-        log.info(this.name() + "created");
+        log.debug(this.name() + "created");
         this.numVisited = 0;
         this.urlToScrap = new LinkedHashSet<>();
         this.scrapCount = new HashMap<>();
@@ -63,7 +62,12 @@ public class SupervisorActor extends UntypedActor implements ActorTemplate {
 
     @Override
     public void shutdown() {
-        this.getContext().stop(this.getSelf());
+        this.self().tell(PoisonPill.getInstance(), ActorRef.noSender());
+    }
+
+    @Override
+    public void forceShutDown() {
+        this.context().stop(this.self());
     }
 
     @Override
@@ -75,21 +79,24 @@ public class SupervisorActor extends UntypedActor implements ActorTemplate {
                     log.debug("Message recieved : " + ((Message) message).getMsg());
                     //indexerActor = actorBuilder.getIndexer(dataUrlService);
                     scrap((String)(((Message) message).getObject()));
+                    urlToScrap.remove((String)(((Message) message).getObject()));
                     break;
                 case "scrapFinished":
                     log.debug("scraping finished "+ ((Message) message).getObject());
-
-                    addNewUrls((DataUrl) ((Message) message).getObject());
+                    if(numVisited < maxPages){
+                        addNewUrls((DataUrl) ((Message) message).getObject());
+                    }
                     checkAndShutdown(((DataUrl) ((Message) message).getObject()).getUrl());
                     break;
                 case "indexFinished":
-                    log.info("Finish Indexing : " + ((Message) message).getObject());
+                    log.debug("Finish Indexing : " + ((Message) message).getObject());
                     if(numVisited < maxPages){
                         for (String url: scrapCount.keySet()) {
                             if(scrapCount.get(url) == 1)
                                 scrap(url);
                         }
                     }
+
                     checkAndShutdown(((String)((Message) message).getObject()));
                     break;
                 case "scrapFailure":
@@ -112,13 +119,14 @@ public class SupervisorActor extends UntypedActor implements ActorTemplate {
     private void scrap(String url){
         URL uri = null;
         try {
-            if(numVisited <maxPages) {
+            if(numVisited < maxPages){
+
                 uri = new URL(url);
                 log.info("NumberVisited Page ["+numVisited+"]");
                 if(!uri.getHost().isEmpty()){
                     ActorRef siteCrawler = addOrGetActor(uri.getHost());
+                    this.scrapCount.put(url,1);
                     numVisited++;
-                    urlToScrap.add(url);
                     countVisit(url);
                     siteCrawler.tell(new Message("scrap", url), this.getSelf());
                 }else
@@ -153,14 +161,19 @@ public class SupervisorActor extends UntypedActor implements ActorTemplate {
     }
 
     private void checkAndShutdown(String url){
-        log.info("Number of Url on Queue : " + urlToScrap.size());
+
         urlToScrap.remove(url);
+        log.info("Visited/toVisit/Limit  : " +numVisited+"/"+urlToScrap.size()+"/"+maxPages);
+        if(urlToScrap.size() == 1)
+            log.info(urlToScrap.toString());
         // if nothing to visit
         if (urlToScrap.isEmpty()) {
             long endTime = System.nanoTime();
             double duration = (double)(endTime - startTime) / 1000000000.0 ;
             log.info("Execution time " + duration +" seconds");
             this.getSelf().tell(PoisonPill.getInstance(), ActorRef.noSender());
+        }else{
+            log.info("Url to Scrap : " + urlToScrap.size());
         }
     }
 
@@ -168,11 +181,11 @@ public class SupervisorActor extends UntypedActor implements ActorTemplate {
         for(String url : data.getLinks()) {
             log.debug("addNewUrls" + url + ":" + isInternalLink(url));
             if (!this.scrapCount.containsKey(url) && isInternalLink(url)) {
-                this.urlToScrap.add(url);
-                scrap(url);
-            }else
-                log.warn("Limit Max Pages ["+maxPages+"] reached !");
-
+                if (urlToScrap.size() < maxPages){
+                    this.urlToScrap.add(url);
+                    scrap(url);
+                }
+            }
         }
     }
 

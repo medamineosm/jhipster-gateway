@@ -6,4 +6,5 @@ package com.monetoring.v2.Actors;
 public interface ActorTemplate {
     String name();
     void shutdown();
+    void forceShutDown();
 }

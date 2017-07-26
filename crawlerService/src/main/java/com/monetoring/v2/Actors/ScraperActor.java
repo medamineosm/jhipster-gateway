@@ -1,6 +1,7 @@
 package com.monetoring.v2.Actors;
 
 import akka.actor.ActorRef;
+import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
 import akka.util.Timeout;
@@ -22,6 +23,7 @@ import org.springframework.context.annotation.Scope;
 import javax.inject.Named;
 import java.io.IOException;
 import java.net.MalformedURLException;
+import java.net.SocketTimeoutException;
 import java.net.URL;
 import java.util.HashSet;
 import java.util.Set;
@@ -40,9 +42,13 @@ public class ScraperActor extends UntypedActor implements ActorTemplate {
 
     public ScraperActor(ActorRef inder){
         this.indexer = inder;
-        log.info(name() + " constructor " + this.indexer.path());
+        log.debug(name() + " constructor " + this.indexer.path());
     }
 
+    @Override
+    public void forceShutDown() {
+        this.context().stop(this.self());
+    }
     @Override
     public String name() {
         return this.getSelf().path().name();
@@ -50,7 +56,7 @@ public class ScraperActor extends UntypedActor implements ActorTemplate {
 
     @Override
     public void shutdown() {
-        this.getContext().stop(this.getSelf());
+        this.self().tell(PoisonPill.getInstance(), ActorRef.noSender());
     }
 
     @Override
@@ -58,9 +64,10 @@ public class ScraperActor extends UntypedActor implements ActorTemplate {
         if(message instanceof Message) {
             switch (((Message) message).getMsg()) {
                 case "scrapUrl":
-                    log.info("ScrapperActor Scraping ... : " + ((Message) message).getObject());
+                    log.debug("ScrapperActor Scraping ... : " + ((Message) message).getObject());
                     DataUrl data = parse((String) ((Message) message).getObject());
                     if (data != null) {
+                        log.info("["+data.getStatusCode()+"]" + data.getUrl());
                         this.indexer.tell(new Message("index", data), self());
                         this.sender().tell(new Message("scrapFinished", data), self());
                     } else {
@@ -71,8 +78,8 @@ public class ScraperActor extends UntypedActor implements ActorTemplate {
         } else if(message instanceof String && message.equals("indexFinished")){
             shutdown();
         }else if(message instanceof String && message.equals("die")){
-            log.info(this.name() + "  will terminate");
-            this.shutdown();
+            log.debug(this.name() + "  will terminate");
+            //this.forceShutDown();
         }else{
             unhandled(message);
             log.error("Unhandled Message : " + ((Message)message).getMsg());
@@ -101,6 +108,8 @@ public class ScraperActor extends UntypedActor implements ActorTemplate {
                     log.warn(url + " is not a html page !");
                 }
             }
+        } catch (SocketTimeoutException e) {
+            log.error("message ["+e.getMessage()+"] Cause :" + e.getCause());
         } catch (HttpStatusException e) {
             log.warn("status ["+e.getStatusCode()+"] :" + e.getUrl());
             data.setUrl(e.getUrl());

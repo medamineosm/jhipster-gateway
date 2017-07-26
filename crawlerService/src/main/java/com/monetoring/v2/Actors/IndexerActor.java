@@ -1,5 +1,7 @@
 package com.monetoring.v2.Actors;
 
+import akka.actor.ActorRef;
+import akka.actor.PoisonPill;
 import akka.actor.UntypedActor;
 import com.monetoring.v2.Actors.Messages.Message;
 import com.monetoring.v2.Model.DataUrl;
@@ -8,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
-import scala.Unit;
 
 import javax.inject.Named;
 import java.util.HashSet;
@@ -25,7 +26,7 @@ public class IndexerActor extends UntypedActor implements ActorTemplate {
     private DataUrlService dataUrlService;
 
     public IndexerActor(DataUrlService dataUrlService){
-        log.info(name() + " constructor");
+        log.debug(name() + " constructor");
         this.dataUrlService = dataUrlService;
     }
 
@@ -38,7 +39,12 @@ public class IndexerActor extends UntypedActor implements ActorTemplate {
 
     @Override
     public void shutdown() {
-        this.getContext().stop(this.getSelf());
+        this.self().tell(PoisonPill.getInstance(), ActorRef.noSender());
+    }
+
+    @Override
+    public void forceShutDown() {
+        this.context().stop(this.self());
     }
 
     @Override
@@ -46,10 +52,10 @@ public class IndexerActor extends UntypedActor implements ActorTemplate {
         if(message instanceof Message){
             switch (((Message) message).getMsg()){
                 case "index":
-                    log.info("Indexing : " + (((DataUrl)((Message) message).getObject()).getUrl()));
+                    log.debug("Indexing : " + (((DataUrl)((Message) message).getObject()).getUrl()));
                     urls.add((DataUrl) ((Message) message).getObject());
                     dataUrlService.save((DataUrl) ((Message) message).getObject());
-                    shutdown();
+                    //forceShutDown();
                     break;
             }
         }else{
@@ -60,7 +66,7 @@ public class IndexerActor extends UntypedActor implements ActorTemplate {
 
     @Override
     public void postStop() throws Exception {
-        log.info("Finish Indexing the urls Number of indexed urls " + urls.size());
+        log.debug("Finish Indexing the urls Number of indexed urls " + urls.size());
         sender().tell("indexFinished", self());
     }
 }
