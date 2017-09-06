@@ -15,6 +15,7 @@ public class DataUrlService {
     private DataUrlDao dataUrlDao;
 
     public DataUrl save(DataUrl dataUrl){
+
         return dataUrlDao.save(dataUrl);
     }
 }
